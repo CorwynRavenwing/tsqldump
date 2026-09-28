@@ -118,7 +118,9 @@ def verify_data():
     cursor_src = conn_src.cursor(as_dict=True)
     cursor_tgt = conn_tgt.cursor(as_dict=True)
     
-    # 1. Verify UnicodeTest table
+    # -------------------------------------------------------------------------
+    # STANZA 1: Verify UnicodeTest table
+    # -------------------------------------------------------------------------
     cursor_src.execute("SELECT LanguageName, SampleText, EmojiSample FROM UnicodeTest ORDER BY ID ASC;")
     src_rows = cursor_src.fetchall()
     
@@ -146,7 +148,9 @@ def verify_data():
         print(f"      ✓ SampleText: '{src['SampleText']}'")
         print(f"      ✓ EmojiSample: '{src['EmojiSample']}'")
 
-    # 2. Verify Products table with numeric and emoji text
+    # -------------------------------------------------------------------------
+    # STANZA 2: Verify Products table with foreign keys & numeric text
+    # -------------------------------------------------------------------------
     cursor_src.execute("SELECT ProductID, ProductName, Price FROM Products ORDER BY ProductID ASC;")
     src_products = cursor_src.fetchall()
     
@@ -163,6 +167,21 @@ def verify_data():
             f"Price mismatch: Expected {src_p['Price']}, got {tgt_p['Price']}"
         )
         print(f"    ✓ Product {src_p['ProductID']} ({src_p['ProductName']}): Price verified")
+
+    # -------------------------------------------------------------------------
+    # STANZA 3: Verify AllTypesTest table
+    # -------------------------------------------------------------------------
+    cursor_src.execute("SELECT * FROM AllTypesTest;")
+    src_all = cursor_src.fetchone()
+
+    cursor_tgt.execute("SELECT * FROM AllTypesTest;")
+    tgt_all = cursor_tgt.fetchone()
+
+    for col_name in src_all.keys():
+        src_val = src_all[col_name]
+        tgt_val = tgt_all[col_name]
+        assert src_val == tgt_val, f"Type mismatch in column '{col_name}': Expected {src_val!r}, got {tgt_val!r}"
+        print(f"    ✓ Data type column '{col_name}' verified: {tgt_val!r}")
 
     conn_src.close()
     conn_tgt.close()

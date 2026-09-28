@@ -1,3 +1,5 @@
+# tsqldump/test/init.sql
+
 -- Create Test Database
 CREATE DATABASE TestDumpDB;
 GO
@@ -5,7 +7,7 @@ GO
 USE TestDumpDB;
 GO
 
--- 1. Table with international multi-byte strings
+-- STANZA 1: Unicode & Foreign Language Text
 CREATE TABLE UnicodeTest (
     ID INT IDENTITY(1,1) PRIMARY KEY,
     LanguageName NVARCHAR(50) NOT NULL,
@@ -21,7 +23,7 @@ INSERT INTO UnicodeTest (LanguageName, SampleText, EmojiSample) VALUES
 (N'Hebrew', N'שלום עולם - בדיקת טקסט', N'✡️'),
 (N'Mixed Accents', N'Café, Niños, Åse, François', N'☕');
 
--- 2. Table with foreign keys and datatypes to verify schema dumping
+-- STANZA 2: Foreign Keys & Relations
 CREATE TABLE Categories (
     CategoryID INT PRIMARY KEY,
     CategoryName NVARCHAR(50) NOT NULL
@@ -36,8 +38,44 @@ CREATE TABLE Products (
 );
 
 INSERT INTO Categories (CategoryID, CategoryName) VALUES (1, N'Electronics'), (2, N'Books');
+
 INSERT INTO Products (ProductID, ProductName, Price, CategoryID) VALUES
 (101, N'Laptop - 💻', 999.99, 1),
 (102, N'Unicode Manual - 📚', 29.95, 2);
+
+-- STANZA 3: Comprehensive SQL Data Types
+CREATE TABLE AllTypesTest (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    -- Numerics
+    BitCol BIT NOT NULL,
+    TinyIntCol TINYINT NOT NULL,
+    BigIntCol BIGINT NOT NULL,
+    DecimalCol DECIMAL(18,4) NOT NULL,
+    FloatCol FLOAT NOT NULL,
+    MoneyCol MONEY NOT NULL,
+    -- Dates & Times
+    DateCol DATE NOT NULL,
+    DateTime2Col DATETIME2(7) NOT NULL,
+    DateTimeOffsetCol DATETIMEOFFSET(7) NOT NULL,
+    -- Binary & Identifiers
+    GuidCol UNIQUEIDENTIFIER NOT NULL,
+    VarBinaryCol VARBINARY(max) NOT NULL,
+    -- XML
+    XmlCol XML NOT NULL,
+    -- Nullable field
+    NullCol NVARCHAR(50) NULL
+);
+
+INSERT INTO AllTypesTest (
+    BitCol, TinyIntCol, BigIntCol, DecimalCol, FloatCol, MoneyCol,
+    DateCol, DateTime2Col, DateTimeOffsetCol,
+    GuidCol, VarBinaryCol, XmlCol, NullCol
+) VALUES (
+    1, 255, 9223372036854775807, 123456.7891, 3.1415926535, 99.99,
+    '2026-09-27', '2026-09-27 20:09:39.1234567', '2026-09-27 20:09:39.1234567 +00:00',
+    'A0EEBC99-9C0B-4EF8-BB6D-6BB9BD380A11', 0xDEADBEEF1234, N'<root><element>Test</element></root>', NULL
+);
+GO
+
 GO
 
