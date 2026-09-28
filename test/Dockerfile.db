@@ -10,7 +10,7 @@ COPY init.sql .
 
 # Environment variables required for startup
 ENV ACCEPT_EULA=Y
-ENV MSSQL_SA_PASSWORD=Test_Password123!
+ENV MSSQL_SA_PASSWORD=YourSecurePassword123!
 
 # Expose port 1433
 EXPOSE 1433

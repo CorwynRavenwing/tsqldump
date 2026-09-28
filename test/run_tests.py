@@ -22,7 +22,7 @@ import pymssql
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = int(os.getenv("DB_PORT", "1433"))
 DB_USER = os.getenv("DB_USER", "sa")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "Test_Password123!")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "YourSecurePassword123!")
 
 SOURCE_DB = "TestDumpDB"
 TARGET_DB = "RestoredTestDumpDB"
