@@ -5,7 +5,11 @@ FROM python:3.11-slim
 
 # Set environment variables to avoid buffering and .pyc generation
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    DB_HOST=localhost \
+    DB_PORT=1433 \
+    DB_USER=sa \
+    DB_PASSWORD=YourSecurePassword123!
 
 # Install system dependencies required for pymssql / FreeTDS and health checking
 RUN apt-get update && apt-get install -y --no-install-recommends \
