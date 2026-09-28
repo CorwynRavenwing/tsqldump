@@ -11,3 +11,14 @@ services:
     ports:
       - "1433:1433"
 
+  test-runner:
+    build:
+      context: ..
+      dockerfile: test/Dockerfile.test
+    container_name: tsqldump_test_runner
+    environment:
+      - DB_HOST=test-db
+    depends_on:
+      test-db:
+        condition: service_healthy
+
