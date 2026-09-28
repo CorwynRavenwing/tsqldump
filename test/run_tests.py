@@ -1,6 +1,7 @@
+#!/usr/bin/env python3
+
 # tsqldump/test/run-test.py
 
-#!/usr/bin/env python3
 """
 tsqldump Integration Test Suite
 
