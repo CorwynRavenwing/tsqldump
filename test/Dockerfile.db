@@ -19,9 +19,23 @@ EXPOSE 1433
 CMD /bin/bash -c " \
     /opt/mssql/bin/sqlservr & \
     echo 'Waiting for SQL Server to boot...'; \
-    until /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P '$MSSQL_SA_PASSWORD' -C -Q 'SELECT 1' &> /dev/null; do sleep 1; done; \
+    until /opt/mssql-tools18/bin/sqlcmd \
+        -S localhost \
+        -U sa \
+        -P '$MSSQL_SA_PASSWORD' \
+        -C \
+        -Q 'SELECT 1' \
+            &> /dev/null; \
+    do \
+        sleep 1; \
+    done; \
     echo 'Running init.sql script...'; \
-    /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P '$MSSQL_SA_PASSWORD' -C -i /usr/src/app/init.sql; \
+    /opt/mssql-tools18/bin/sqlcmd \
+        -S localhost \
+        -U sa \
+        -P '$MSSQL_SA_PASSWORD' \
+        -C \
+        -i /usr/src/app/init.sql; \
     echo 'Test database initialized!'; \
     wait \
     "
