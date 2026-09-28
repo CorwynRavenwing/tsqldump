@@ -32,7 +32,7 @@ You are free to use, modify, distribute, and integrate this software in commerci
 
 1. Clone the repository:
    ```bash
-   git clone [https://github.com/your-username/tsqldump.git](https://github.com/your-username/tsqldump.git)
+   git clone https://github.com/CorwynRavenwing/tsqldump.git
    cd tsqldump
    ```
 
