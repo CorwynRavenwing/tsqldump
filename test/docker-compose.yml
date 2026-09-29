@@ -1,7 +1,5 @@
 # tsqldump/docker-compose.yml
 
-version: '3.8'
-
 services:
   test-db:
     build:
@@ -18,6 +16,10 @@ services:
     container_name: tsqldump_test_runner
     environment:
       - DB_HOST=test-db
+    volumes:
+      # - ./output:/app/test/output
+      - ./test/output:/app/test/output
+      # - .:/app/test
     depends_on:
       test-db:
         condition: service_healthy

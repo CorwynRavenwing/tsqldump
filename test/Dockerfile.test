@@ -26,9 +26,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source code and test files into the container
-COPY src/ ./src/
-COPY test/ ./test/
+# Copy everything from project root (including tsqldump/main.py and test/)
+COPY . .
 
 # Set Python path so tsqldump package can be imported directly
 ENV PYTHONPATH=/app/src

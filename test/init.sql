@@ -1,4 +1,4 @@
-# tsqldump/test/init.sql
+-- tsqldump/test/init.sql
 
 -- Create Test Database
 CREATE DATABASE TestDumpDB;

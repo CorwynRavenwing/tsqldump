@@ -24,10 +24,14 @@ DB_PORT = int(os.getenv("DB_PORT", "1433"))
 DB_USER = os.getenv("DB_USER", "sa")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "YourSecurePassword123!")
 
+# Project directory paths
+TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.abspath(os.path.join(TEST_DIR, ".."))
+CLI_PATH = os.path.join(REPO_ROOT, "main.py")
+
 SOURCE_DB = "TestDumpDB"
 TARGET_DB = "RestoredTestDumpDB"
-DUMP_FILE = "test_dump.sql"
-
+DUMP_FILE = os.path.join(REPO_ROOT, "test", "output", "test_dump.sql")
 
 def get_connection(db_name="master"):
     """Creates an autocommit pymssql connection to SQL Server."""
@@ -42,16 +46,12 @@ def get_connection(db_name="master"):
     )
     return conn
 
-
 def run_tsqldump():
     """Executes the tsqldump CLI to generate a database dump file."""
     print(f"[*] Running tsqldump on '{SOURCE_DB}'...")
     
-    # Path to CLI entrypoint from test directory
-    cli_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "tsqldump", "main.py"))
-    
     cmd = [
-        sys.executable, cli_path,
+        sys.executable, CLI_PATH,
         "-S", f"{DB_HOST},{DB_PORT}",
         "-U", DB_USER,
         "-P", DB_PASSWORD,
@@ -91,26 +91,56 @@ def recreate_target_db():
 def restore_dump():
     """Executes the generated SQL dump script against the target database."""
     print(f"[*] Restoring dump into '{TARGET_DB}'...")
+
+    # Ensure a completely pristine database state before restoring
+    conn_master = get_connection("master")
+    cursor_master = conn_master.cursor()
+    # Drop existing connections and database cleanly
+    cursor_master.execute("""
+        IF DB_ID('RestoredTestDumpDB') IS NOT NULL 
+        BEGIN
+            ALTER DATABASE [RestoredTestDumpDB] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+            DROP DATABASE [RestoredTestDumpDB];
+        END
+    """)
+    # at this moment, DB is guaranteed *not* to exist
+    cursor_master.execute("CREATE DATABASE [RestoredTestDumpDB];")
+    # and here, it's guaranteed *to* exist
+    conn_master.close()
     
+    conn = get_connection(TARGET_DB)
+    cursor = conn.cursor()
+
     with open(DUMP_FILE, "r", encoding="utf-8") as f:
         sql_script = f.read()
 
-    conn = get_connection(TARGET_DB)
-    cursor = conn.cursor()
-    
     # Execute batch by batch (splitting on GO if present, or executing blocks)
     batches = sql_script.split("\nGO\n") if "\nGO\n" in sql_script else [sql_script]
-    for batch in batches:
+    for i, batch in enumerate(batches):
         cleaned_batch = batch.strip()
-        if cleaned_batch:
-            cursor.execute(cleaned_batch)
+        if not cleaned_batch:
+            continue
+        
+        # Remove leading comments to check the actual statement
+        lines = [line.strip() for line in cleaned_batch.splitlines() if line.strip() and not line.strip().startswith("--")]
+        statement = lines[0].upper() if lines else ""
+
+        # Skip USE statements so we don't switch context away from RestoredTestDumpDB
+        if statement.startswith("USE "):
+            print(f"Skipping context switch batch #{i+1}: {cleaned_batch[:40]}...")
+            continue
+
+        print(f"Executing Batch #{i+1}:\n{cleaned_batch[:80]}...\n")
+        cursor.execute(cleaned_batch)
             
     conn.close()
     print(f"[+] Restore completed successfully into '{TARGET_DB}'.")
 
 
 def verify_data():
-    """Queries both source and restored databases to assert exact string and data equality."""
+    """
+    Queries both source and restored databases to assert exact string and data equality.
+    """
     print("[*] Verifying data integrity and Unicode string equality...")
     
     conn_src = get_connection(SOURCE_DB)
@@ -178,6 +208,9 @@ def verify_data():
     cursor_tgt.execute("SELECT * FROM AllTypesTest;")
     tgt_all = cursor_tgt.fetchone()
 
+    assert src_all is not None, "Source database returned no rows for verification query!"
+    assert tgt_all is not None, "Restored database returned no rows for verification query!"
+
     for col_name in src_all.keys():
         src_val = src_all[col_name]
         tgt_val = tgt_all[col_name]
@@ -193,7 +226,26 @@ def main():
     try:
         run_tsqldump()
         recreate_target_db()
-        restore_dump()
+
+        print(f"[*] Dump file path: {os.path.abspath(DUMP_FILE)}")
+        print(f"[*] File exists? {os.path.exists(DUMP_FILE)}")
+        if os.path.exists(DUMP_FILE):
+            print(f"[*] File size: {os.path.getsize(DUMP_FILE)} bytes")
+
+        try:
+            restore_dump()
+        except Exception as e:
+            print("\n" + "="*50)
+            print("[!] RESTORE FAILED. Printing contents of dump file:")
+            print("="*50)
+            if os.path.exists(DUMP_FILE):
+                with open(DUMP_FILE, "r", encoding="utf-8") as f:
+                    print(f.read())
+            else:
+                print(f"[!] Dump file NOT found at: {DUMP_FILE}")
+            print("="*50 + "\n")
+            raise e
+
         verify_data()
     finally:
         # Clean up dump file after test execution
