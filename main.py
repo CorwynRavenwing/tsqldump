@@ -29,6 +29,38 @@ def parse_args():
     parser.add_argument("-o", "--output", help="Output file path (default: stdout)")
     parser.add_argument("--schema-only", action="store_true", help="Dump schema DDL only")
     parser.add_argument("--data-only", action="store_true", help="Dump data INSERTs only")
+
+    parser.add_argument(
+        "-R", "--routines",
+        action="store_true",
+        default=False,
+        help="Dump stored procedures and functions."
+    )
+    parser.add_argument(
+        "--triggers",
+        action="store_true",
+        default=True,
+        help="Dump triggers (enabled by default)."
+    )
+    parser.add_argument(
+        "--skip-triggers",
+        action="store_false",
+        dest="triggers",
+        help="Do not dump triggers."
+    )
+    parser.add_argument(
+        "--views",
+        action="store_true",
+        default=True,
+        help="Dump views (enabled by default)."
+    )
+    parser.add_argument(
+        "--skip-views",
+        action="store_false",
+        dest="views",
+        help="Do not dump views."
+    )
+
     return parser.parse_args()
 
 
