@@ -22,14 +22,40 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Dump Microsoft SQL Server schemas and data into T-SQL scripts."
     )
-    parser.add_argument("-S", "--server", required=True, help="SQL Server host or host,port")
-    parser.add_argument("-U", "--user", required=True, help="Database username")
-    parser.add_argument("-P", "--password", required=True, help="Database password")
-    parser.add_argument("-d", "--database", required=True, help="Target database name")
-    parser.add_argument("-o", "--output", help="Output file path (default: stdout)")
-    parser.add_argument("--schema-only", action="store_true", help="Dump schema DDL only")
-    parser.add_argument("--data-only", action="store_true", help="Dump data INSERTs only")
-
+    parser.add_argument(
+        "-S", "--server",
+        required=True,
+        help="SQL Server host or host,port"
+    )
+    parser.add_argument(
+        "-U", "--user",
+        required=True,
+        help="Database username"
+    )
+    parser.add_argument(
+        "-P", "--password",
+        required=True,
+        help="Database password"
+    )
+    parser.add_argument(
+        "-d", "--database",
+        required=True,
+        help="Target database name"
+    )
+    parser.add_argument(
+        "-o", "--output",
+        help="Output file path (default: stdout)"
+    )
+    parser.add_argument(
+        "--schema-only",
+        action="store_true",
+        help="Dump schema DDL only"
+    )
+    parser.add_argument(
+        "--data-only",
+        action="store_true",
+        help="Dump data INSERTs only"
+    )
     parser.add_argument(
         "-R", "--routines",
         action="store_true",
@@ -68,28 +94,28 @@ def format_literal(val):
     """Formats Python values retrieved from SQL Server into valid T-SQL literals."""
     if val is None:
         return "NULL"
-    
+
     if isinstance(val, bool):
         return "1" if val else "0"
-    
+
     if isinstance(val, (int, float, decimal.Decimal)):
         return str(val)
-    
+
     if isinstance(val, bytes):
         return "0x" + val.hex().upper()
-    
+
     if isinstance(val, (datetime.datetime, datetime.date, datetime.time)):
         return f"'{val.isoformat()}'"
-    
+
     if isinstance(val, uuid.UUID):
         return f"'{str(val).upper()}'"
-    
+
     if isinstance(val, str):
         # Escape single quotes by doubling them
         escaped = val.replace("'", "''")
         # Prepend 'N' to ensure Unicode NVARCHAR literals are preserved
         return f"N'{escaped}'"
-    
+
     # Fallback string representation
     escaped = str(val).replace("'", "''")
     return f"N'{escaped}'"
@@ -123,7 +149,7 @@ class TSQLDumper:
         """Fetches tables sorted to honor foreign key dependencies."""
         cursor = self.conn.cursor(as_dict=True)
         query = """
-        SELECT 
+        SELECT
             s.name AS schema_name,
             t.name AS table_name,
             t.object_id
@@ -137,7 +163,7 @@ class TSQLDumper:
 
         # Simple topological dependency sort based on foreign keys
         cursor.execute("""
-        SELECT 
+        SELECT
             OBJECT_SCHEMA_NAME(parent_object_id) AS parent_schema,
             OBJECT_NAME(parent_object_id) AS parent_table,
             OBJECT_SCHEMA_NAME(referenced_object_id) AS ref_schema,
@@ -184,10 +210,10 @@ class TSQLDumper:
 
     def dump_table_ddl(self, schema, table):
         cursor = self.conn.cursor(as_dict=True)
-        
+
         # Fetch columns
         cursor.execute("""
-        SELECT 
+        SELECT
             c.name,
             TYPE_NAME(c.user_type_id) AS type_name,
             c.max_length,
@@ -207,7 +233,7 @@ class TSQLDumper:
             name = c["name"]
             type_name = c["type_name"].upper()
             is_null = "NULL" if c["is_nullable"] else "NOT NULL"
-            
+
             if c["is_identity"]:
                 has_identity = True
                 identity_str = " IDENTITY(1,1)"
@@ -275,14 +301,14 @@ class TSQLDumper:
 
         if has_identity:
             self.write(f"SET IDENTITY_INSERT [{schema}].[{table}] OFF;")
-        
+
         self.write("GO\n")
 
     def dump_foreign_keys(self, tables):
         """Applies foreign keys after table creation and data inserts."""
         cursor = self.conn.cursor(as_dict=True)
         cursor.execute("""
-        SELECT 
+        SELECT
             fk.name AS fk_name,
             OBJECT_SCHEMA_NAME(fk.parent_object_id) AS parent_schema,
             OBJECT_NAME(fk.parent_object_id) AS parent_table,
@@ -302,7 +328,7 @@ class TSQLDumper:
         for fk in fks:
             p_schema, p_tbl = fk["parent_schema"], fk["parent_table"]
             r_schema, r_tbl = fk["ref_schema"], fk["ref_table"]
-            
+
             # Only add foreign keys for dumped tables
             if (p_schema, p_tbl) in tables and (r_schema, r_tbl) in tables:
                 self.write(
@@ -314,7 +340,7 @@ class TSQLDumper:
     def dump(self, schema_only=False, data_only=False):
         self.connect()
         self.dump_header()
-        
+
         tables = self.get_tables()
         table_identity_map = {}
 
@@ -337,7 +363,7 @@ class TSQLDumper:
 
 def main():
     args = parse_args()
-    
+
     # Split host/port if specified as "host,port"
     if "," in args.server:
         host, port_str = args.server.split(",", 1)
