@@ -1,9 +1,5 @@
 MOVING_FORWARD_PLAN.md
 
-
-# 0. let's verify that the parent/child relationship between those two tables is also being exported?
-
-
 # Part (A): How mysqldump Handles Routines, Triggers & Views
 
 mysqldump exposes specific CLI flags to control non-table database objects:
