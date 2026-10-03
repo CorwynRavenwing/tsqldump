@@ -77,5 +77,38 @@ INSERT INTO AllTypesTest (
 );
 GO
 
-GO
+-- 1. View
+CREATE VIEW vw_ProductCategories AS
+SELECT p.ProductID, p.ProductName, p.Price, c.CategoryName
+FROM Products p
+LEFT JOIN Categories c ON p.CategoryID = c.CategoryID;
 
+-- 2. Scalar Function
+CREATE FUNCTION fn_CalculateTax(@Amount DECIMAL(10,2))
+RETURNS DECIMAL(10,2)
+AS
+BEGIN
+    RETURN @Amount * 0.08;
+END;
+
+-- 3. Stored Procedure
+CREATE PROCEDURE sp_GetProductsByCategory
+    @CatID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT ProductID, ProductName, Price
+    FROM Products
+    WHERE CategoryID = @CatID;
+END;
+
+-- 4. Trigger
+CREATE TRIGGER trg_UpdateCategoryTimestamp
+ON Categories
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    -- Simple trigger stub for testing definition extract
+END;
+GO
