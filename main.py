@@ -416,7 +416,7 @@ class TSQLDumper:
         cursor = self.conn.cursor(as_dict=True)
         query = """
             SELECT
-                SCHEMA_NAME(t.schema_id) AS schema_name,
+                OBJECT_SCHEMA_NAME(t.parent_id) AS schema_name,
                 t.name AS trigger_name,
                 m.definition
             FROM sys.triggers t
@@ -428,7 +428,7 @@ class TSQLDumper:
         triggers = cursor.fetchall()
 
         for tr in triggers:
-            schema = tr['schema_name']
+            schema = tr['schema_name'] or 'dbo'
             name = tr['trigger_name']
             definition = tr['definition'].strip()
 
