@@ -357,11 +357,11 @@ def main():
 
         # Next verify data equality & column types
         verify_data()
-    finally:
-        # Clean up dump file after test execution
-        if os.path.exists(DUMP_FILE):
-            os.remove(DUMP_FILE)
 
+    # finally:
+    #     # Clean up dump file after test execution
+    #     if os.path.exists(DUMP_FILE):
+    #         os.remove(DUMP_FILE)
 
 if __name__ == "__main__":
     main()
