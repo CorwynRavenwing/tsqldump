@@ -17,9 +17,7 @@ services:
     environment:
       - DB_HOST=test-db
     volumes:
-      # - ./output:/app/test/output
-      - ./test/output:/app/test/output
-      # - .:/app/test
+      - ./output:/app/test/output
     depends_on:
       test-db:
         condition: service_healthy
