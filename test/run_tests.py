@@ -356,8 +356,14 @@ def main():
                     print(f.read())
             else:
                 print(f"[!] Dump file NOT found at: {DUMP_FILE}")
-            print("="*50 + "\n")
+            print("="*50)
+            print("[!] DETAILED DB ERRORS:")
+            if hasattr(e, 'args'):
+                for arg in e.args:
+                    print("   ->", arg)
+            print("="*50)
             raise e
+
 
         # First verify non-table schema objects & constraints
         verify_objects()
