@@ -446,31 +446,33 @@ class TSQLDumper:
         tables = self.get_tables()
         table_identity_map = {}
 
-        # DDL Pass
         if not data_only:
             # self.dump_tables_schema()
             for schema, table in tables:
                 has_id = self.dump_table_ddl(schema, table)
                 table_identity_map[(schema, table)] = has_id
-            if views:
-                self.dump_views()
 
-        # Data Pass
         if not schema_only:
             # self.dump_data()
             for schema, table in tables:
                 has_id = table_identity_map.get((schema, table), False)
                 self.dump_table_data(schema, table, has_id)
 
-        # Derived Objects Pass
         if not data_only:
             self.dump_foreign_keys(tables)
 
+        if not data_only:
+            if views:
+                self.dump_views()
+
+        if not data_only:
             if routines:
                 self.dump_routines()
 
+        if not data_only:
             if triggers:
                 self.dump_triggers()
+
 
 def main():
     args = parse_args()
