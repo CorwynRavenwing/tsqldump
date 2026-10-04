@@ -328,7 +328,6 @@ def verify_data():
     conn_tgt.close()
     print("\n[🎉] ALL TESTS PASSED! Multi-byte characters and schemas preserved perfectly.")
 
-
 def main():
     try:
         run_tsqldump()
@@ -366,4 +365,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
