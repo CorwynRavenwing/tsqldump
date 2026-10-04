@@ -348,7 +348,6 @@ class TSQLDumper:
                 )
         self.write("GO\n")
 
-    def dump(self, schema_only=False, data_only=False):
     def dump_views(self) -> None:
         """Extract view definitions from sys.views and sys.sql_modules."""
         cursor = self.conn.cursor(as_dict=True)
@@ -440,6 +439,7 @@ class TSQLDumper:
             self.write(f"{definition}\n")
             self.write("GO\n\n")
 
+    def dump(self, schema_only=False, data_only=False, routines=False, triggers=True, views=True):
         self.connect()
         self.dump_header()
 
@@ -485,7 +485,14 @@ def main():
             database=args.database,
             output_stream=out_stream
         )
-        dumper.dump(schema_only=args.schema_only, data_only=args.data_only)
+        # Invoke dump with the matching signature
+        dumper.dump(
+            schema_only=args.schema_only,
+            data_only=args.data_only,
+            routines=args.routines,
+            triggers=args.triggers,
+            views=args.views,
+        )
     finally:
         if args.output and out_stream:
             out_stream.close()
