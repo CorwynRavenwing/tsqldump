@@ -1,0 +1,3 @@
+# git ignore output file
+test/output/test_dump.sql
+
