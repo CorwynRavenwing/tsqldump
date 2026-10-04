@@ -352,12 +352,12 @@ class TSQLDumper:
         cursor = self.conn.cursor(as_dict=True)
         query = """
             SELECT
-                SCHEMA_NAME(o.schema_id) AS schema_name,
-                o.name AS view_name,
+                SCHEMA_NAME(v.schema_id) AS schema_name,
+                v.name AS view_name,
                 m.definition
-            FROM sys.views o
-            JOIN sys.sql_modules m ON o.object_id = m.object_id
-            WHERE o.is_ms_shipped = 0
+            FROM sys.views v
+            JOIN sys.sql_modules m ON v.object_id = m.object_id
+            WHERE v.is_ms_shipped = 0
             ORDER BY schema_name, view_name;
         """
         cursor.execute(query)
