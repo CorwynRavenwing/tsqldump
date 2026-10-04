@@ -42,7 +42,8 @@ def get_connection(db_name="master"):
         password=DB_PASSWORD,
         database=db_name,
         charset="UTF-8",
-        autocommit=True
+        autocommit=True,
+        as_dict=True
     )
     return conn
 
