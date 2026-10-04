@@ -70,7 +70,6 @@ def run_tsqldump():
 
     print(f"[+] Dump created successfully: {DUMP_FILE} ({os.path.getsize(DUMP_FILE)} bytes)")
 
-
 def recreate_target_db():
     """Drops (if exists) and recreates the fresh target database."""
     print(f"[*] Preparing target database '{TARGET_DB}'...")

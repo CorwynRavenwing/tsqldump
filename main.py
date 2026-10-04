@@ -90,7 +90,6 @@ def parse_args():
         default=True,
         help="Dump views (default: enabled).",
     )
-
     parser.add_argument(
         "--skip-views",
         action="store_false",
