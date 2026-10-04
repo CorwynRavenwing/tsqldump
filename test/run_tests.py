@@ -56,7 +56,9 @@ def run_tsqldump():
         "-U", DB_USER,
         "-P", DB_PASSWORD,
         "-d", SOURCE_DB,
-        "-o", DUMP_FILE
+        "-o", DUMP_FILE,
+        "--routines"        # Include stored procedures and functions
+        # --views and --triggers default to True
     ]
 
     result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
