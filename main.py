@@ -423,13 +423,14 @@ class TSQLDumper:
             WHERE t.is_ms_shipped = 0
             ORDER BY schema_name, trigger_name;
         """
+
         cursor.execute(query)
         triggers = cursor.fetchall()
 
-        for tr in triggers:
-            schema = tr['schema_name'] or 'dbo'
-            name = tr['trigger_name']
-            definition = tr['definition'].strip()
+        for trg in triggers:
+            schema = trg['schema_name'] or 'dbo'
+            name = trg['trigger_name']
+            definition = trg['definition'].strip()
 
             self.write(f"-- Trigger DDL for [{schema}].[{name}]\n")
             self.write(f"IF OBJECT_ID(N'[{schema}].[{name}]', N'TR') IS NOT NULL\n")
