@@ -32,3 +32,10 @@ build:
 clean: test-clean
 	rm -rf build/ dist/ *.spec __pycache__ src/tsqldump/__pycache__
 
+logs:
+	docker logs tsqldump_test_db
+
+errors:
+	docker exec -it tsqldump_test_db /opt/mssql-tools18/bin/sqlcmd \
+	   -S localhost -U sa -P 'YourSecurePassword123!' -C \
+	   -Q "EXEC sp_readerrorlog 0, 1;"
