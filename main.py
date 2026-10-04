@@ -17,11 +17,12 @@ import sys
 import uuid
 import pymssql
 
-
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Dump Microsoft SQL Server schemas and data into T-SQL scripts."
+        description="tsqldump - MSSQL database dump utility"
     )
+
+    # Connection flags
     parser.add_argument(
         "-S", "--server",
         required=True,
@@ -46,18 +47,27 @@ def parse_args():
         "-o", "--output",
         help="Output file path (default: stdout)"
     )
+
+    # Mode flags
     parser.add_argument(
-        "--schema-only",
-        action="store_true",
-        help="Dump schema DDL only"
-    )
-    parser.add_argument(
+        # "-d",
         "--data-only",
         action="store_true",
-        help="Dump data INSERTs only"
+        help="Dump data INSERTs only, not schema.",
+        default=False,
     )
     parser.add_argument(
-        "-R", "--routines",
+        # "-s",
+        "--schema-only",
+        action="store_true",
+        default=False,
+        help="Dump schema DDL only, not data.",
+    )
+
+    # Object flags
+    parser.add_argument(
+        "-R",
+        "--routines",
         action="store_true",
         default=False,
         help="Dump stored procedures and functions."
@@ -66,7 +76,7 @@ def parse_args():
         "--triggers",
         action="store_true",
         default=True,
-        help="Dump triggers (enabled by default)."
+        help="Dump triggers (default: enabled).",
     )
     parser.add_argument(
         "--skip-triggers",
@@ -78,8 +88,9 @@ def parse_args():
         "--views",
         action="store_true",
         default=True,
-        help="Dump views (enabled by default)."
+        help="Dump views (default: enabled).",
     )
+
     parser.add_argument(
         "--skip-views",
         action="store_false",
