@@ -136,6 +136,113 @@ def restore_dump():
     conn.close()
     print(f"[+] Restore completed successfully into '{TARGET_DB}'.")
 
+def verify_objects():
+    """
+    Queries sys.objects, sys.views, and sys.triggers on both source and target
+    databases to verify views, routines, triggers, and foreign keys were restored.
+    """
+    print("\n[*] Verifying database object definitions (Views, Routines, Triggers, FKs)...")
+
+    conn_src = get_connection(SOURCE_DB)
+    conn_tgt = get_connection(TARGET_DB)
+
+    cursor_src = conn_src.cursor(as_dict=True)
+    cursor_tgt = conn_tgt.cursor(as_dict=True)
+
+    # -------------------------------------------------------------------------
+    # 1. Verify Views
+    # -------------------------------------------------------------------------
+    view_query = """
+        SELECT SCHEMA_NAME(schema_id) AS schema_name, name
+        FROM sys.views
+        WHERE is_ms_shipped = 0
+        ORDER BY schema_name, name;
+    """
+    cursor_src.execute(view_query)
+    src_views = [r['name'] for r in cursor_src.fetchall()]
+
+    cursor_tgt.execute(view_query)
+    tgt_views = [r['name'] for r in cursor_tgt.fetchall()]
+
+    assert src_views == tgt_views, f"View mismatch! Expected: {src_views}, Got: {tgt_views}"
+    for v in tgt_views:
+        print(f"    ✓ View verified: [{v}]")
+
+    # Verify view functional execution
+    cursor_tgt.execute("SELECT COUNT(*) AS cnt FROM vw_ProductCategories;")
+    view_row = cursor_tgt.fetchone()
+    assert view_row['cnt'] > 0, "vw_ProductCategories returned zero rows on target!"
+    print("    ✓ Query execution on restored view 'vw_ProductCategories' succeeded.")
+
+    # -------------------------------------------------------------------------
+    # 2. Verify Routines (Functions & Stored Procedures)
+    # -------------------------------------------------------------------------
+    routine_query = """
+        SELECT SCHEMA_NAME(schema_id) AS schema_name, name, type
+        FROM sys.objects
+        WHERE is_ms_shipped = 0 AND type IN ('P', 'FN', 'IF', 'TF')
+        ORDER BY type, schema_name, name;
+    """
+    cursor_src.execute(routine_query)
+    src_routines = {r['name']: r['type'].strip() for r in cursor_src.fetchall()}
+
+    cursor_tgt.execute(routine_query)
+    tgt_routines = {r['name']: r['type'].strip() for r in cursor_tgt.fetchall()}
+
+    assert src_routines == tgt_routines, f"Routine mismatch! Expected: {src_routines}, Got: {tgt_routines}"
+    for r_name, r_type in tgt_routines.items():
+        type_desc = "Stored Procedure" if r_type == 'P' else "Function"
+        print(f"    ✓ {type_desc} verified: [{r_name}]")
+
+    # Functional call check on restored Function
+    cursor_tgt.execute("SELECT dbo.fn_CalculateTax(100.00) AS tax;")
+    tax_result = cursor_tgt.fetchone()
+    assert tax_result['tax'] == 8.00, f"fn_CalculateTax unexpected output: {tax_result['tax']}"
+    print("    ✓ Execution of restored scalar function 'fn_CalculateTax(100.00)' passed (= 8.00).")
+
+    # Functional call check on restored Stored Procedure
+    cursor_tgt.execute("EXEC sp_GetProductsByCategory @CatID = 1;")
+    proc_rows = cursor_tgt.fetchall()
+    assert len(proc_rows) > 0, "sp_GetProductsByCategory returned no rows!"
+    print("    ✓ Execution of restored procedure 'sp_GetProductsByCategory @CatID = 1' passed.")
+
+    # -------------------------------------------------------------------------
+    # 3. Verify Triggers
+    # -------------------------------------------------------------------------
+    trigger_query = """
+        SELECT SCHEMA_NAME(t.schema_id) AS schema_name, t.name AS trigger_name, OBJECT_NAME(t.parent_id) AS parent_table
+        FROM sys.triggers t
+        WHERE t.is_ms_shipped = 0
+        ORDER BY schema_name, trigger_name;
+    """
+    cursor_src.execute(trigger_query)
+    src_triggers = cursor_src.fetchall()
+
+    cursor_tgt.execute(trigger_query)
+    tgt_triggers = cursor_tgt.fetchall()
+
+    assert len(src_triggers) == len(tgt_triggers), f"Trigger count mismatch: {len(src_triggers)} vs {len(tgt_triggers)}"
+    for tr in tgt_triggers:
+        print(f"    ✓ Trigger verified: [{tr['trigger_name']}] on table [{tr['parent_table']}]")
+
+    # -------------------------------------------------------------------------
+    # 4. Verify Foreign Key Constraints
+    # -------------------------------------------------------------------------
+    fk_query = """
+        SELECT name FROM sys.foreign_keys WHERE is_ms_shipped = 0 ORDER BY name;
+    """
+    cursor_src.execute(fk_query)
+    src_fks = [r['name'] for r in cursor_src.fetchall()]
+
+    cursor_tgt.execute(fk_query)
+    tgt_fks = [r['name'] for r in cursor_tgt.fetchall()]
+
+    assert src_fks == tgt_fks, f"Foreign Key mismatch! Expected: {src_fks}, Got: {tgt_fks}"
+    for fk in tgt_fks:
+        print(f"    ✓ Foreign Key constraint verified: [{fk}]")
+
+    conn_src.close()
+    conn_tgt.close()
 
 def verify_data():
     """
@@ -246,6 +353,10 @@ def main():
             print("="*50 + "\n")
             raise e
 
+        # First verify non-table schema objects & constraints
+        verify_objects()
+
+        # Next verify data equality & column types
         verify_data()
     finally:
         # Clean up dump file after test execution
