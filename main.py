@@ -349,6 +349,97 @@ class TSQLDumper:
         self.write("GO\n")
 
     def dump(self, schema_only=False, data_only=False):
+    def dump_views(self) -> None:
+        """Extract view definitions from sys.views and sys.sql_modules."""
+        cursor = self.conn.cursor(as_dict=True)
+        query = """
+            SELECT
+                SCHEMA_NAME(o.schema_id) AS schema_name,
+                o.name AS view_name,
+                m.definition
+            FROM sys.views o
+            JOIN sys.sql_modules m ON o.object_id = m.object_id
+            WHERE o.is_ms_shipped = 0
+            ORDER BY schema_name, view_name;
+        """
+        cursor.execute(query)
+        views = cursor.fetchall()
+
+        for v in views:
+            schema = v['schema_name']
+            name = v['view_name']
+            definition = v['definition'].strip()
+
+            self.write(f"-- View DDL for [{schema}].[{name}]\n")
+            self.write(f"IF OBJECT_ID(N'[{schema}].[{name}]', N'V') IS NOT NULL\n")
+            self.write(f"    DROP VIEW [{schema}].[{name}];\n")
+            self.write("GO\n\n")
+            self.write(f"{definition}\n")
+            self.write("GO\n\n")
+
+    def dump_routines(self) -> None:
+        """Extract Stored Procedures and Functions from sys.objects and sys.sql_modules."""
+        cursor = self.conn.cursor(as_dict=True)
+        query = """
+            SELECT
+                SCHEMA_NAME(o.schema_id) AS schema_name,
+                o.name AS routine_name,
+                o.type AS routine_type,
+                m.definition
+            FROM sys.objects o
+            JOIN sys.sql_modules m ON o.object_id = m.object_id
+            WHERE o.is_ms_shipped = 0
+              AND o.type IN ('P', 'FN', 'IF', 'TF')
+            ORDER BY o.type, schema_name, routine_name;
+        """
+        cursor.execute(query)
+        routines = cursor.fetchall()
+
+        for r in routines:
+            schema = r['schema_name']
+            name = r['routine_name']
+            r_type = r['routine_type'].strip()
+            definition = r['definition'].strip()
+
+            drop_type = 'P' if r_type == 'P' else 'FN'
+            obj_kw = 'PROCEDURE' if r_type == 'P' else 'FUNCTION'
+            type_desc = "Stored Procedure" if r_type == 'P' else "Function"
+
+            self.write(f"-- {type_desc} DDL for [{schema}].[{name}]\n")
+            self.write(f"IF OBJECT_ID(N'[{schema}].[{name}]', N'{drop_type}') IS NOT NULL\n")
+            self.write(f"    DROP {obj_kw} [{schema}].[{name}];\n")
+            self.write("GO\n\n")
+            self.write(f"{definition}\n")
+            self.write("GO\n\n")
+
+    def dump_triggers(self) -> None:
+        """Extract Table Triggers from sys.triggers and sys.sql_modules."""
+        cursor = self.conn.cursor(as_dict=True)
+        query = """
+            SELECT
+                SCHEMA_NAME(t.schema_id) AS schema_name,
+                t.name AS trigger_name,
+                m.definition
+            FROM sys.triggers t
+            JOIN sys.sql_modules m ON t.object_id = m.object_id
+            WHERE t.is_ms_shipped = 0
+            ORDER BY schema_name, trigger_name;
+        """
+        cursor.execute(query)
+        triggers = cursor.fetchall()
+
+        for tr in triggers:
+            schema = tr['schema_name']
+            name = tr['trigger_name']
+            definition = tr['definition'].strip()
+
+            self.write(f"-- Trigger DDL for [{schema}].[{name}]\n")
+            self.write(f"IF OBJECT_ID(N'[{schema}].[{name}]', N'TR') IS NOT NULL\n")
+            self.write(f"    DROP TRIGGER [{schema}].[{name}];\n")
+            self.write("GO\n\n")
+            self.write(f"{definition}\n")
+            self.write("GO\n\n")
+
         self.connect()
         self.dump_header()
 
