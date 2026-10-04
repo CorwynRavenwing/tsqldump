@@ -49,7 +49,7 @@ def get_connection(db_name="master"):
 def run_tsqldump():
     """Executes the tsqldump CLI to generate a database dump file."""
     print(f"[*] Running tsqldump on '{SOURCE_DB}'...")
-    
+
     cmd = [
         sys.executable, CLI_PATH,
         "-S", f"{DB_HOST},{DB_PORT}",
@@ -58,14 +58,14 @@ def run_tsqldump():
         "-d", SOURCE_DB,
         "-o", DUMP_FILE
     ]
-    
+
     result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
     if result.returncode != 0:
         print(f"[!] tsqldump failed with exit code {result.returncode}")
         print(f"STDOUT:\n{result.stdout}")
         print(f"STDERR:\n{result.stderr}")
         sys.exit(1)
-        
+
     print(f"[+] Dump created successfully: {DUMP_FILE} ({os.path.getsize(DUMP_FILE)} bytes)")
 
 
@@ -74,7 +74,7 @@ def recreate_target_db():
     print(f"[*] Preparing target database '{TARGET_DB}'...")
     conn = get_connection("master")
     cursor = conn.cursor()
-    
+
     # Kill active connections and drop target database if present
     cursor.execute(f"""
         IF EXISTS (SELECT name FROM sys.databases WHERE name = '{TARGET_DB}')
@@ -97,7 +97,7 @@ def restore_dump():
     cursor_master = conn_master.cursor()
     # Drop existing connections and database cleanly
     cursor_master.execute("""
-        IF DB_ID('RestoredTestDumpDB') IS NOT NULL 
+        IF DB_ID('RestoredTestDumpDB') IS NOT NULL
         BEGIN
             ALTER DATABASE [RestoredTestDumpDB] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
             DROP DATABASE [RestoredTestDumpDB];
@@ -107,7 +107,7 @@ def restore_dump():
     cursor_master.execute("CREATE DATABASE [RestoredTestDumpDB];")
     # and here, it's guaranteed *to* exist
     conn_master.close()
-    
+
     conn = get_connection(TARGET_DB)
     cursor = conn.cursor()
 
@@ -120,7 +120,7 @@ def restore_dump():
         cleaned_batch = batch.strip()
         if not cleaned_batch:
             continue
-        
+
         # Remove leading comments to check the actual statement
         lines = [line.strip() for line in cleaned_batch.splitlines() if line.strip() and not line.strip().startswith("--")]
         statement = lines[0].upper() if lines else ""
@@ -132,7 +132,7 @@ def restore_dump():
 
         print(f"Executing Batch #{i+1}:\n{cleaned_batch[:80]}...\n")
         cursor.execute(cleaned_batch)
-            
+
     conn.close()
     print(f"[+] Restore completed successfully into '{TARGET_DB}'.")
 
@@ -142,34 +142,34 @@ def verify_data():
     Queries both source and restored databases to assert exact string and data equality.
     """
     print("[*] Verifying data integrity and Unicode string equality...")
-    
+
     conn_src = get_connection(SOURCE_DB)
     conn_tgt = get_connection(TARGET_DB)
-    
+
     cursor_src = conn_src.cursor(as_dict=True)
     cursor_tgt = conn_tgt.cursor(as_dict=True)
-    
+
     # -------------------------------------------------------------------------
     # STANZA 1: Verify UnicodeTest table
     # -------------------------------------------------------------------------
     cursor_src.execute("SELECT LanguageName, SampleText, EmojiSample FROM UnicodeTest ORDER BY ID ASC;")
     src_rows = cursor_src.fetchall()
-    
+
     cursor_tgt.execute("SELECT LanguageName, SampleText, EmojiSample FROM UnicodeTest ORDER BY ID ASC;")
     tgt_rows = cursor_tgt.fetchall()
-    
+
     assert len(src_rows) == len(tgt_rows), f"Row count mismatch in UnicodeTest: {len(src_rows)} vs {len(tgt_rows)}"
-    
+
     for i, (src, tgt) in enumerate(zip(src_rows, tgt_rows), start=1):
         print(f"    Checking row {i} [{src['LanguageName']}]:")
-        
+
         # Exact string assertion on SampleText
         assert src["SampleText"] == tgt["SampleText"], (
             f"SampleText mismatch at row {i} ({src['LanguageName']}):\n"
             f"  Expected: {src['SampleText']}\n"
             f"  Got:      {tgt['SampleText']}"
         )
-        
+
         # Exact string assertion on EmojiSample
         assert src["EmojiSample"] == tgt["EmojiSample"], (
             f"EmojiSample mismatch at row {i} ({src['LanguageName']}):\n"
@@ -184,12 +184,12 @@ def verify_data():
     # -------------------------------------------------------------------------
     cursor_src.execute("SELECT ProductID, ProductName, Price FROM Products ORDER BY ProductID ASC;")
     src_products = cursor_src.fetchall()
-    
+
     cursor_tgt.execute("SELECT ProductID, ProductName, Price FROM Products ORDER BY ProductID ASC;")
     tgt_products = cursor_tgt.fetchall()
-    
+
     assert len(src_products) == len(tgt_products), "Row count mismatch in Products"
-    
+
     for src_p, tgt_p in zip(src_products, tgt_products):
         assert src_p["ProductName"] == tgt_p["ProductName"], (
             f"ProductName mismatch: Expected '{src_p['ProductName']}', got '{tgt_p['ProductName']}'"

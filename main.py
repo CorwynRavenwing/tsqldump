@@ -493,6 +493,9 @@ def main():
             triggers=args.triggers,
             views=args.views,
         )
+    except Exception as e:
+        sys.stderr.write(f"Error during dump: {e}\n")
+        sys.exit(1)
     finally:
         if args.output and out_stream:
             out_stream.close()
@@ -500,4 +503,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
