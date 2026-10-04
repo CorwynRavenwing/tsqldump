@@ -212,11 +212,16 @@ def verify_objects():
     # 3. Verify Triggers
     # -------------------------------------------------------------------------
     trigger_query = """
-        SELECT SCHEMA_NAME(t.schema_id) AS schema_name, t.name AS trigger_name, OBJECT_NAME(t.parent_id) AS parent_table
+        SELECT
+            SCHEMA_NAME(p.schema_id) AS schema_name,
+            t.name AS trigger_name,
+            OBJECT_NAME(t.parent_id) AS parent_table
         FROM sys.triggers t
+        JOIN sys.objects p ON t.parent_id = p.object_id
         WHERE t.is_ms_shipped = 0
         ORDER BY schema_name, trigger_name;
     """
+
     cursor_src.execute(trigger_query)
     src_triggers = cursor_src.fetchall()
 
