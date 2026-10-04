@@ -448,17 +448,19 @@ class TSQLDumper:
 
         # DDL Pass
         if not data_only:
+            # self.dump_tables_schema()
             for schema, table in tables:
                 has_id = self.dump_table_ddl(schema, table)
                 table_identity_map[(schema, table)] = has_id
 
         # Data Pass
         if not schema_only:
+            # self.dump_data()
             for schema, table in tables:
                 has_id = table_identity_map.get((schema, table), False)
                 self.dump_table_data(schema, table, has_id)
 
-        # Foreign Keys Pass
+        # Derived Objects Pass
         if not data_only:
             self.dump_foreign_keys(tables)
 
@@ -477,6 +479,7 @@ def main():
     out_stream = open(args.output, "w", encoding="utf-8") if args.output else sys.stdout
 
     try:
+        # Instantiate dumper with connection details and output stream
         dumper = TSQLDumper(
             host=host,
             port=port,
