@@ -14,6 +14,7 @@ services:
       context: ..
       dockerfile: test/Dockerfile.test
     container_name: tsqldump_test_runner
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     environment:
       - DB_HOST=test-db
     volumes:

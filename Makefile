@@ -19,7 +19,12 @@ install:
 	$(PYTHON) -m pip install -r requirements.txt
 
 test:
-	docker compose -f test/docker-compose.yml up --build --exit-code-from test-runner
+	@mkdir -p test/output
+	HOST_UID=$$(id -u) HOST_GID=$$(id -g) \
+		docker compose \
+			-f test/docker-compose.yml \
+			up --build \
+			--exit-code-from test-runner
 	@echo "✓ Integration tests passed inside container!"
 
 test-clean:
