@@ -452,6 +452,8 @@ class TSQLDumper:
             for schema, table in tables:
                 has_id = self.dump_table_ddl(schema, table)
                 table_identity_map[(schema, table)] = has_id
+            if views:
+                self.dump_views()
 
         # Data Pass
         if not schema_only:
@@ -464,6 +466,11 @@ class TSQLDumper:
         if not data_only:
             self.dump_foreign_keys(tables)
 
+            if routines:
+                self.dump_routines()
+
+            if triggers:
+                self.dump_triggers()
 
 def main():
     args = parse_args()
