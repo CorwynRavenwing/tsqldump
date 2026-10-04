@@ -171,7 +171,7 @@ def verify_objects():
         print(f"    ✓ View verified: [{v}]")
 
     # Verify view functional execution
-    cursor_tgt.execute("SELECT COUNT(*) AS cnt FROM vw_ProductCategories;")
+    cursor_tgt.execute("SELECT COUNT(*) AS cnt FROM dbo.vw_ProductCategories;")
     view_row = cursor_tgt.fetchone()
     assert view_row['cnt'] > 0, "vw_ProductCategories returned zero rows on target!"
     print("    ✓ Query execution on restored view 'vw_ProductCategories' succeeded.")
