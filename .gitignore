@@ -1,3 +1,8 @@
-# git ignore output file
+# git ignore the SQL file output during testing
 test/output/test_dump.sql
+
+# ignore the completed program and its spec file
+*.spec
+dist/
+build/
 

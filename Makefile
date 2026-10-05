@@ -31,11 +31,16 @@ test-clean:
 	docker compose -f test/docker-compose.yml down -v
 
 build:
-	$(PYTHON) -m pip install pyinstaller
-	pyinstaller --onefile --name tsqldump src/tsqldump/main.py
+	@mkdir -p dist
+	docker run --rm \
+		-e HOME=/tmp \
+		-v "$$(pwd):/app" \
+		-w /app \
+		--user="$$(id -u):$$(id -g)" \
+		python:3.11 sh -c "pip install --no-cache-dir pyinstaller -r requirements.txt && python -m PyInstaller --onefile --name tsqldump main.py"
 
 clean: test-clean
-	rm -rf build/ dist/ *.spec __pycache__ src/tsqldump/__pycache__
+	rm -rf build/ dist/ *.spec __pycache__
 
 logs:
 	docker logs tsqldump_test_db
