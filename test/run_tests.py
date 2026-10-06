@@ -48,11 +48,23 @@ def get_connection(db_name="master"):
     return conn
 
 def run_tsqldump():
+    nonlocal test_target_text
     """Executes the tsqldump CLI to generate a database dump file."""
     print(f"[*] Running tsqldump on '{SOURCE_DB}'...")
 
-    cmd = [
-        sys.executable, CLI_PATH,
+    # Check if the compiled binary exists inside the container and is executable
+    test_target_text = ""
+    binary_path = "/app/dist/tsqldump"
+    if os.path.exists(binary_path) and os.access(binary_path, os.X_OK):
+        test_target_text = "compiled binary"
+        print(f"[*] Testing {test_target_text}: {binary_path}")
+        executable = [binary_path]
+    else:
+        test_target_text = "python main.py source"
+        print(f"[*] Binary not found in dist/. Testing {test_target_text}...")
+        executable = [sys.executable, CLI_PATH]
+
+    cmd = executable + [
         "-S", f"{DB_HOST},{DB_PORT}",
         "-U", DB_USER,
         "-P", DB_PASSWORD,
@@ -63,6 +75,7 @@ def run_tsqldump():
     ]
 
     result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+
     if result.returncode != 0:
         print(f"[!] tsqldump failed with exit code {result.returncode}")
         print(f"STDOUT:\n{result.stdout}")
@@ -334,6 +347,7 @@ def verify_data():
     conn_src.close()
     conn_tgt.close()
     print("\n[🎉] ALL TESTS PASSED! Multi-byte characters and schemas preserved perfectly.")
+    print(f"\tTarget under test was: {test_target_text}")
 
 def main():
     try:
