@@ -1,7 +1,7 @@
-# git ignore the SQL file output during testing
+# SQL file created during testing
 test/output/test_dump.sql
 
-# ignore the completed program and its spec file
+# PyInstaller build artifacts
 *.spec
 dist/
 build/
